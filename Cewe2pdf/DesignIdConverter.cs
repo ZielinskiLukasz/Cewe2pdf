@@ -7,48 +7,12 @@ namespace Cewe2pdf {
     class DesignIdConverter {
 
         private static Dictionary<string, Image> _imageCache = new Dictionary<string, Image>();
-        private static Dictionary<string, string> _resourceList;
-
-        public static void initResourceList() {
-            if (_resourceList == null) {
-                _resourceList = new Dictionary<string, string>();
-
-                string path = Config.ProgramPath + "\\Resources\\ls-R";
-
-                // check if path is valid
-                if (!System.IO.File.Exists(path)) {
-                    Log.Error("File at '" + path + "' does not exist.");
-                }
-
-                // Read the file and display it line by line.
-                System.IO.StreamReader file;
-                try {
-                    file = new System.IO.StreamReader(path);
-                    string line;
-
-                    // this file contains all design id paths, store relevant ones for easy use in mcfParser
-                    while ((line = file.ReadLine()) != null) {
-                        // TODO: for now only looks for backgrounds.
-                        if (line.StartsWith("photofun/backgrounds")) {
-                            string id = line.Split("/").Last().Split(".").First();
-                            //Log.Info("Register ID: " + id + " at: " + line);
-                            id = id.Split("-").Last(); // some ids have names... keep only the id number...
-                            _resourceList.TryAdd(id, line);
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.Error("Loading Design IDs failed with Error: '" + e.Message + "'");
-                }
-
-                Log.Info("Added " + _resourceList.Count + " Design IDs to resource cache.");
-            }
-        }
 
         private static string getPath(string pId) {
             string path;
 
-            // in installation
-            path = getIdPathFromInstallation(pId);
+            // from installation
+            path = getIdPathFromInstallationDirectly(pId);
             if (!String.IsNullOrWhiteSpace(path)) {
                 return path;
             }
@@ -63,25 +27,11 @@ namespace Cewe2pdf {
             return "";
         }
 
-        private static string getIdPathFromInstallation(string pId) {
-            if (_resourceList == null) initResourceList();
-
-            // look up path
-            string ret = "";
-            _resourceList.TryGetValue(pId, out ret);
-
-            if (String.IsNullOrWhiteSpace(ret))
-                return "";
-            else
-                return Config.ProgramPath + "//Resources//" + ret;
-        }
-
-        private static string getIdPathFromProgramData(string pId) {
+        private static string getIdPathFromDirectory(string pId, string pDirectory) {
             // scan whole folder for image files
-            const string dlpath = "C:\\ProgramData\\hps";
-            if (System.IO.Directory.Exists(dlpath)) {
-                string[] filenames = System.IO.Directory.GetFiles(dlpath, "*", System.IO.SearchOption.AllDirectories);
-                Log.Info("Loading DesignIDs from '" + dlpath + "'.");
+            if (System.IO.Directory.Exists(pDirectory)) {
+                string[] filenames = System.IO.Directory.GetFiles(pDirectory, "*", System.IO.SearchOption.AllDirectories);
+                Log.Info("Loading DesignIDs from '" + pDirectory + "'.");
                 foreach (string addfile in filenames) {
                     if (addfile.EndsWith(".jpg") || addfile.EndsWith(".bmp") || addfile.EndsWith(".webp")) {
                         string id = addfile.Split("\\").Last().Split(".").First();
@@ -93,11 +43,23 @@ namespace Cewe2pdf {
                     }
                 }
             } else {
-                Log.Warning("Directory at: '" + dlpath + "' does not exist.");
+                Log.Warning("Directory at: '" + pDirectory + "' does not exist.");
             }
-
             return "";
         }
+
+        private static string getIdPathFromProgramData(string pId) {
+            // scan dynamic download folder for matching design ids
+            const string dlpath = "C:\\ProgramData\\hps";
+            return getIdPathFromDirectory(pId, dlpath);
+        }
+
+        public static string getIdPathFromInstallationDirectly(string pId) {
+            // directly scans the installtion folder for matching design ids
+            string path = Config.ProgramPath + "\\Resources\\photofun\\backgrounds";
+            return getIdPathFromDirectory(pId, path);
+        }
+        
 
         public static Image getImageFromID(string pId) {
             if (_imageCache.ContainsKey(pId)) {
