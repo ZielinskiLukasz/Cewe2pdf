@@ -13,9 +13,11 @@ namespace Cewe2pdf {
         private System.IO.FileStream _fileStream;
         private Document _doc = new Document();
         private PdfWriter _writer;
+        private Mcfx _mcfx;
 
-        public pdfWriter(string pOutPath) {
+        public pdfWriter(string pOutPath, Mcfx mcfx) {
             // TODO add more exception checking...
+            _mcfx = mcfx;
 
             try {
                 // Open file stream for exported pdf
@@ -194,7 +196,7 @@ namespace Cewe2pdf {
                     ImageArea imgArea = (ImageArea)area;
 
                     // if image path was not valid draw magenta outline and print error
-                    if (imgArea.path == "NULL") {
+                    if (imgArea.filename == "NULL") {
 #if DEBUG || _DEBUG
                         // calculate rect dimensions
                         Rectangle nullRect = new Rectangle(pX, pY, pX + imgArea.rect.Width, pY + imgArea.rect.Height);
@@ -216,13 +218,14 @@ namespace Cewe2pdf {
                     // load image file.
                     System.Drawing.Image sysImg;
                     try {
-                        sysImg = System.Drawing.Image.FromFile(imgArea.path);
+                        sysImg = _mcfx.getSystemImageForFilename(imgArea.filename);
                     } catch (System.Exception e) {
                         if (e is System.IO.FileNotFoundException)
-                            Log.Error("Loading image failed. Image at '" + imgArea.path + "' not found.");
+                            Log.Error("Loading image failed. Image at '" + imgArea.filename + "' not found.");
                         else {
-                            Log.Error("Loading image failed wit error: '" + e.Message + "'");
+                            Log.Error("Loading image failed with error: '" + e.Message + "'");
                         }
+                        Log.Error("Loading image failed.");
                         canvas.RestoreState();
                         continue;
                     }
@@ -259,7 +262,7 @@ namespace Cewe2pdf {
                     cropped.SetAbsolutePosition(imgArea.rect.X, posY);
 
                     string imgType = area is ImageBackgroundArea ? "ImageBackground" : "Image";
-                    Log.Info("Rendering " + imgType + " (." + imgArea.path.Split(".").Last() + "): " +
+                    Log.Info("Rendering " + imgType + " (." + imgArea.filename.Split(".").Last() + "): " +
                         "original: " + sysImg.Width + "x" + sysImg.Height + "; " +
                         "scaled: " + newSize.Width + "x" + newSize.Height + "; " +
                         "cropped: " + (int)cropped.Width + "x" + (int)cropped.Height + "; " +

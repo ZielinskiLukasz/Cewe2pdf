@@ -33,7 +33,7 @@ namespace Cewe2pdf {
                       + "\n\t" + "-silent".PadLeft(padLen) + " | enables error level console output (default for Release builds)"
                     );
                     return false;
-                } else if (args[i].EndsWith(".mcf")) Program.mcfPath = args[i];
+                } else if (args[i].EndsWith(".mcfx")) Program.mcfxPath = args[i];
                 else if (args[i].EndsWith(".pdf")) Program.pdfPath = args[i];
                 else if (args[i] == "-verbose") Log.level = Log.Level.Info;
                 else if (args[i] == "-silent") Log.level = Log.Level.Error;

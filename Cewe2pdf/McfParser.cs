@@ -19,11 +19,11 @@ namespace Cewe2pdf {
     };
 
     class ImageArea : Area {
-        public string path;
+        public string filename; // the filename stored in mcfx database
         public Vector2 cutout;
         public float scale;
         public override string toString() {
-            return "[ImageArea] rect: " + rect.ToString() + "; rotation: " + rotation.ToString("F2") + "; path: " + path;
+            return "[ImageArea] rect: " + rect.ToString() + "; rotation: " + rotation.ToString("F2") + "; path: " + filename;
         }
     };
 
@@ -31,7 +31,7 @@ namespace Cewe2pdf {
         public enum ImageBackgroundType { Undefined, Left, Right, Bundle }
         public ImageBackgroundType type;
         public override string toString() {
-            return "[ImageBackgroundArea] rect: " + rect.ToString() + "; rotation: " + rotation.ToString("F2") + "; path: " + path;
+            return "[ImageBackgroundArea] rect: " + rect.ToString() + "; rotation: " + rotation.ToString("F2") + "; path: " + filename;
         }
     };
 
@@ -100,7 +100,6 @@ namespace Cewe2pdf {
         const float SCALE = 0.4f;       // overall scale applied to pdf... does not affect resolution of images!
         const float FONT = 3.26f;       // match to photobook font size
 
-        private string _safeContainerPath; // path to the image folder
         private XmlDocument _xmlDoc = new XmlDocument();
         private XmlNode _fotobook;      // the <fotobook> tag from .mcf file
         private XmlNode _stats;         // the <statistics> tag rfom .mcf file
@@ -108,30 +107,25 @@ namespace Cewe2pdf {
         private List<XmlNode> _pages;   // all <page> nodes in .mcf
         private int _pageIterator = 0;  // keep track of current page
 
-        public McfParser(string pFilePath) {
+        public McfParser(System.IO.MemoryStream mcf) {
             // load xml into memory
             try {
-                _xmlDoc.Load(pFilePath);
-                Log.Message("Loaded '" + pFilePath + "'.");
+                _xmlDoc.Load(mcf);
+                Log.Message("Loaded .mcf from stream.");
             } catch (Exception e) {
-                Log.Error("Loading .mcf File: '" + pFilePath + "' failed with message: " + e.Message);
+                Log.Error("Loading .mcf from stream failed with message: " + e.Message);
                 return;
             }
 
-            // remove .mcf from path, add folder suffix
-            _safeContainerPath = pFilePath.Substring(0, pFilePath.Length - 4) + "_mcf-Dateien\\";
+            _parseXmlDocument();
+        }
 
-            // check if this path actually exists
-            if (!System.IO.Directory.Exists(_safeContainerPath)) {
-                Log.Error("Image folder not found. Expected at: '" + _safeContainerPath + "'"); // TODO: Log.Message some hints what to do?
-                return;
-            }
-
+        private void _parseXmlDocument() {
             // get the root xml node 'fotobook'
             _fotobook = _xmlDoc.SelectSingleNode("fotobook");
 
             if (_fotobook == null) {
-                Log.Error("Parsing '" + pFilePath + "' failed. No <fotobook> tag found.");
+                Log.Error("xml parsing failed. No <fotobook> tag found.");
                 return;
             }
 
@@ -251,9 +245,9 @@ namespace Cewe2pdf {
                                         // the image file name stored in .mcf file (in format: "safecontainer:/imageName.jpg)
                                         string filename = getAttributeStr(image, "filename");
 
-                                        // replace 'safecontainer:/' with actual path, in case filename does not exist,
+                                        // remove 'safecontainer:/', in case filename does not exist,
                                         // store "NULL", will render as magenta outline and print error.
-                                        string filePath = filename != "" ? filename.Replace("safecontainer:/", _safeContainerPath) : "NULL";
+                                        string fileName = filename != "" ? filename.Replace("safecontainer:/", "") : "NULL";
 
                                         // get & store cutout information
                                         XmlNode cutout = image.SelectSingleNode("cutout");
@@ -262,7 +256,7 @@ namespace Cewe2pdf {
 
                                         // construct new area
                                         newArea = new ImageArea() {
-                                            path = filePath,
+                                            filename = fileName,
                                             cutout = cutoutLeftTop,
                                             scale = scale,
                                         };
@@ -287,9 +281,9 @@ namespace Cewe2pdf {
                                         // the image file
                                         string filename = getAttributeStr(imgbg, "filename");
 
-                                        // replace 'safecontainer:/' with actual path, in case filename does not exist,
+                                        // remove 'safecontainer:/', in case filename does not exist,
                                         // store "NULL", will render as magenta outline and print error.
-                                        string filePath = filename != "" ? filename.Replace("safecontainer:/", _safeContainerPath) : "NULL";
+                                        string fileName = filename != "" ? filename.Replace("safecontainer:/", "") : "NULL";
 
                                         // get & store cutout information
                                         XmlNode cutout = imgbg.SelectSingleNode("cutout");
@@ -310,7 +304,7 @@ namespace Cewe2pdf {
 
                                         // construct new area
                                         newArea = new ImageBackgroundArea() {
-                                            path = filePath,
+                                            filename = fileName,
                                             cutout = cutoutLeftTop,
                                             scale = scale,
                                             type = bgtype
@@ -456,7 +450,7 @@ namespace Cewe2pdf {
             doc?.LoadXml(html);
 
             // get the node that contains span objects for each line of text
-            XmlNode node = doc?.SelectSingleNode("html/body/table/tr/td");
+            XmlNode node = doc?.SelectSingleNode("html/body");
 
             if (node == null) {
                 Log.Error("Text node not found. Stopping text parsing.");
@@ -510,15 +504,8 @@ namespace Cewe2pdf {
             if (String.IsNullOrWhiteSpace(bodyStyle)) Log.Error("Body style for given html text was null.");
             else parseBodyStyle(bodyStyle, ref fontFamily, ref fontSize, ref fontWeight, ref fontStyle, ref color, ref textDecoration);
 
-            // now loop through all <p> elements in <td> (new lines)
-            XmlNode td = body.SelectSingleNode("table/tr/td");
-
-            if (td == null) {
-                Log.Error("table/tr/td was null. HTML string:\n\n" + html + "\n\n");
-                return ret;
-            }
-
-            foreach (XmlNode p in td.ChildNodes) {
+            // now loop through all <p> elements in <body> (new lines)
+            foreach (XmlNode p in body.ChildNodes) {
                 if (p.Name != "p") continue;
 
                 string align = getAttributeStr(p, "align", "Center");

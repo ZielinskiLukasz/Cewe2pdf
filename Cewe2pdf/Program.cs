@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace Cewe2pdf {
 
     class Program {
-        public static readonly string version = "v0.3.0-alpha6";
-        public static string mcfPath = "";
+        public static readonly string version = "v0.4.0-alpha1";
+        public static string mcfxPath = "";
         public static string pdfPath = "";
 
         private const string CONFIG_PATH = "config.txt";
@@ -25,11 +25,11 @@ namespace Cewe2pdf {
             if (!CmdArgParser.parse(args, out cmdoptions)) return;
 
             // check for valid input file
-            if (String.IsNullOrWhiteSpace(mcfPath)) { Log.Error("No input.mcf file specified."); return; }
-            if (!System.IO.File.Exists(mcfPath)) { Log.Error("'" + mcfPath + "' does not exist.'"); return; }
+            if (String.IsNullOrWhiteSpace(mcfxPath)) { Log.Error("No input.mcfx file specified."); return; }
+            if (!System.IO.File.Exists(mcfxPath)) { Log.Error("'" + mcfxPath + "' does not exist.'"); return; }
 
             // allow only input file as argument
-            if (String.IsNullOrWhiteSpace(pdfPath)) pdfPath = mcfPath.Replace(".mcf", "-converted.pdf");
+            if (String.IsNullOrWhiteSpace(pdfPath)) pdfPath = mcfxPath.Replace(".mcfx", "-converted.pdf");
 
             // set config settings
             Config.setMissingFromOptions(cmdoptions.ToArray());
@@ -43,23 +43,24 @@ namespace Cewe2pdf {
                 return;
             }
 
-            // for user information only
+            // measure runtime to calculate remaining time
             System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
 
             // initialize with given files
-            mcfParser parser = new mcfParser(mcfPath);
-            pdfWriter writer = new pdfWriter(pdfPath);
+            Mcfx mcfx = new Mcfx(mcfxPath);
+            McfParser parser = new McfParser(mcfx.getMcfFile());
+            pdfWriter writer = new pdfWriter(pdfPath, mcfx);
 
             if (Config.ToPage > 0)
                 Log.Message("Converting " + Config.ToPage.ToString() + " pages.");
 
             Log.Message("Starting conversion. This may take several minutes.");
 
-            // for user information
+            // keep track to calculate progress to report to user
             int count = 0;
             int pageCount = Config.ToPage > 0 ? Config.ToPage : parser.pageCount();
 
-            //  iterate through all pages
+            // iterate through all pages
             while (true) {
                 Page next = parser.nextPage();
                 if (next == null) break; // reached end of book
