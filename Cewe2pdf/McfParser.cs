@@ -95,11 +95,11 @@ namespace Cewe2pdf {
         static public string pageNoColor;
     };
 
-    class mcfParser {
+    class McfParser {
 
         const float SCALE = 0.4f;       // overall scale applied to pdf... does not affect resolution of images!
-
         const float FONT = 3.26f;       // match to photobook font size
+
         private string _safeContainerPath; // path to the image folder
         private XmlDocument _xmlDoc = new XmlDocument();
         private XmlNode _fotobook;      // the <fotobook> tag from .mcf file
@@ -108,7 +108,7 @@ namespace Cewe2pdf {
         private List<XmlNode> _pages;   // all <page> nodes in .mcf
         private int _pageIterator = 0;  // keep track of current page
 
-        public mcfParser(string pFilePath) {
+        public McfParser(string pFilePath) {
             // load xml into memory
             try {
                 _xmlDoc.Load(pFilePath);
