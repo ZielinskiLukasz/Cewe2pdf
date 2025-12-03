@@ -49,7 +49,7 @@ namespace Cewe2pdf {
             // initialize with given files
             Mcfx mcfx = new Mcfx(mcfxPath);
             McfParser parser = new McfParser(mcfx.getMcfFile());
-            pdfWriter writer = new pdfWriter(pdfPath, mcfx);
+            PdfWriter writer = new PdfWriter(pdfPath, mcfx);
 
             if (Config.ToPage > 0)
                 Log.Message("Converting " + Config.ToPage.ToString() + " pages.");

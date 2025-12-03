@@ -8,14 +8,14 @@ using System.Linq;
 
 namespace Cewe2pdf {
 
-    class pdfWriter {
+    class PdfWriter {
 
         private System.IO.FileStream _fileStream;
         private Document _doc = new Document();
-        private PdfWriter _writer;
+        private iTextSharp.text.pdf.PdfWriter _writer;
         private Mcfx _mcfx;
 
-        public pdfWriter(string pOutPath, Mcfx mcfx) {
+        public PdfWriter(string pOutPath, Mcfx mcfx) {
             // TODO add more exception checking...
             _mcfx = mcfx;
 
@@ -28,7 +28,7 @@ namespace Cewe2pdf {
             }
 
             // initialize iTextSharp pdf writer
-            _writer = PdfWriter.GetInstance(_doc, _fileStream);
+            _writer = iTextSharp.text.pdf.PdfWriter.GetInstance(_doc, _fileStream);
 
             // just put something in there, doesn't really matter...
             _doc.AddAuthor("Cewe2pdf.exe");
@@ -440,7 +440,7 @@ namespace Cewe2pdf {
 
         }
 
-        public Image cropImage(Image image, PdfWriter writer, float fromLeft, float fromBottom, float width, float height) {
+        public Image cropImage(Image image, iTextSharp.text.pdf.PdfWriter writer, float fromLeft, float fromBottom, float width, float height) {
             // from https://stackoverflow.com/a/14473667
             PdfContentByte cb = writer.DirectContent;
             PdfTemplate t = cb.CreateTemplate(width, height);
