@@ -69,6 +69,7 @@ namespace Cewe2pdf {
             Emptypage,
             Normalpage,
         };
+
         static public Type convert(string typename) {
             switch (typename) {
                 case "normalpage": return Type.Normalpage;
@@ -172,7 +173,7 @@ namespace Cewe2pdf {
                         break;
 
                     default:
-                        // these are not needed
+                        // these are not needed/supported for now
                         Log.Warning("Unhandled Node in <fotobook> '" + node.Name + "'.");
                         break;
                 }

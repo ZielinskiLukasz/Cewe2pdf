@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Cewe2pdf {
 
     class Program {
-        public static readonly string version = "v0.4.0-alpha1";
+        public static readonly string version = "v0.4.1-alpha1";
         public static string mcfxPath = "";
         public static string pdfPath = "";
 
